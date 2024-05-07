@@ -19,17 +19,30 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn displace(self, dx: usize, dy: usize) -> Block {
-        Block {
-            x: self.x + dx,
-            y: self.y + dy,
-            texts: self
-                .texts
-                .into_iter()
-                .map(|(content, cy)| (content, cy + dy))
-                .collect(),
-            ..self
-        }
+    pub fn displace(&mut self, dx: usize, dy: usize) {
+        self.x += dx;
+        self.y += dy;
+        self.texts.iter_mut().for_each(|(_, cy)| *cy += dy);
+    }
+
+    pub fn pos(&self) -> (usize, usize) {
+        (self.x, self.y)
+    }
+
+    pub fn top_pos(&self) -> (usize, usize) {
+        (self.x + self.width / 2, self.y)
+    }
+
+    pub fn bottom_pos(&self) -> (usize, usize) {
+        (self.x + self.width / 2, self.y + self.height)
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
     }
 
     pub fn to_svg(&self) -> SvgShape {
@@ -73,7 +86,7 @@ impl Block {
             .map(|(content, cy)| SvgShape::Text {
                 cx,
                 cy: *cy,
-                content: content.clone(),
+                content: escape_xml(content),
             })
             .collect()
     }
@@ -114,7 +127,7 @@ impl BlockBuilder {
         )
     }
 
-    pub fn build_terminal(&self, content: String) -> Block {
+    fn build_terminal(&self, content: String) -> Block {
         let (width, height) = self.estimate_text_width_height(&content);
         // The diameter of the circle in the playground is the `height`.
         // And we don't want to write texts in the circle.
@@ -131,7 +144,7 @@ impl BlockBuilder {
         }
     }
 
-    pub fn build_io(&self, content: String) -> Block {
+    fn build_io(&self, content: String) -> Block {
         let (width, height) = self.estimate_text_width_height(&content);
         let width = width + (2.0 * height as f64 / self.theta.tan()).ceil() as usize;
         let (width, height) = self.fit_to_grid(width, height);
@@ -146,7 +159,7 @@ impl BlockBuilder {
         }
     }
 
-    pub fn build_process(&self, content: String) -> Block {
+    fn build_process(&self, content: String) -> Block {
         let (width, height) = self.estimate_text_width_height(&content);
         let (width, height) = self.fit_to_grid(width, height);
         Block {
@@ -160,7 +173,7 @@ impl BlockBuilder {
         }
     }
 
-    pub fn build_decision(&self, content: String) -> Block {
+    fn build_decision(&self, content: String) -> Block {
         let (width, height) = self.estimate_text_width_height(&content);
         let (width, height) = (2 * width, 2 * height);
         let (width, height) = self.fit_to_grid(width, height);
@@ -172,6 +185,15 @@ impl BlockBuilder {
             height,
             theta: None,
             texts: get_texts(content, height / 2, self.font_size),
+        }
+    }
+
+    pub fn build(&self, kind: BlockKind, content: String) -> Block {
+        match kind {
+            BlockKind::Terminal => self.build_terminal(content),
+            BlockKind::IO => self.build_io(content),
+            BlockKind::Process => self.build_process(content),
+            BlockKind::Decision => self.build_decision(content),
         }
     }
 }
@@ -195,4 +217,19 @@ fn get_texts(content: String, cy: usize, font_size: usize) -> Vec<(String, usize
         .zip(0..)
         .map(|(line, i)| (String::from(line), (i * font_size as isize - dy) as usize))
         .collect()
+}
+
+fn escape_xml(content: &str) -> String {
+    let mut s = String::new();
+    for c in content.chars() {
+        match c {
+            '"' => s.push_str("&quot;"),
+            '\'' => s.push_str("&apos;"),
+            '<' => s.push_str("&lt;"),
+            '>' => s.push_str("&gt;"),
+            '&' => s.push_str("&amp;"),
+            _ => s.push(c),
+        }
+    }
+    s
 }

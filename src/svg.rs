@@ -45,6 +45,11 @@ pub enum SvgShape {
         width: usize,
         height: usize,
     },
+    DownArrow {
+        x: usize,
+        y: usize,
+        height: usize,
+    },
     Circle {
         cx: usize,
         cy: usize,
@@ -89,6 +94,7 @@ impl Svg {
                     vec![
                         ("font-family", "monospace"),
                         ("font-size", format!("{}px", config.font_size()).as_str()),
+                        ("font-size-adjust", "0.5"),
                         ("text-anchor", "middle"),
                         ("dominant-baseline", "middle"),
                     ],
@@ -309,6 +315,17 @@ fn write_shape(
             width,
             height
         ),
+        SvgShape::DownArrow { x, y, height } => {
+            writeln_indent!(
+                f,
+                indent,
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" marker-end="url(#arrow)"/>"#,
+                x,
+                y,
+                x,
+                y + height
+            )
+        }
         SvgShape::Circle { cx, cy, r } => {
             writeln_indent!(f, indent, r#"<circle cx="{}" cy="{}" r="{}" />"#, cx, cy, r)
         }

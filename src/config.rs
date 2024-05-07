@@ -4,6 +4,7 @@ pub struct Config {
     min_width: usize,
     min_height: usize,
     theta: f64,
+    distance: usize,
 }
 
 impl Config {
@@ -26,6 +27,10 @@ impl Config {
     pub fn theta(&self) -> f64 {
         self.theta
     }
+
+    pub fn distance(&self) -> usize {
+        self.distance
+    }
 }
 
 pub struct ConfigBuilder {
@@ -41,6 +46,7 @@ impl ConfigBuilder {
                 min_width: 200,
                 min_height: 40,
                 theta: 1.25,
+                distance: 40,
             },
         }
     }
@@ -89,6 +95,15 @@ impl ConfigBuilder {
         Self {
             config: Config {
                 theta,
+                ..self.config
+            },
+        }
+    }
+
+    pub fn distance(self, distance: usize) -> Self {
+        Self {
+            config: Config {
+                distance,
                 ..self.config
             },
         }

@@ -1,11 +1,12 @@
 use flowchart::{
-    block::BlockBuilder,
+    basic_block::BasicBlock,
+    block::{BlockBuilder, BlockKind},
     config::ConfigBuilder,
     svg::{Svg, SvgShape},
 };
 
 fn main() {
-    let config = ConfigBuilder::new().grid_size(50).build();
+    let config = ConfigBuilder::new().font_size(20).build();
     let mut svg = Svg::new(&config);
     svg.push_shape(SvgShape::Grid {
         size: config.grid_size(),
@@ -13,31 +14,12 @@ fn main() {
         y_count: 10,
     });
     let builder = BlockBuilder::new(&config);
-    svg.push_shape(
-        builder
-            .build_terminal(String::from(
-                "This is the start blah blah\nThis is the start blah blah",
-            ))
-            .displace(config.grid_size(), config.grid_size())
-            .to_svg(),
-    );
-    svg.push_shape(
-        builder
-            .build_io(String::from("Input blah blah blah blah"))
-            .displace(config.grid_size(), 3 * config.grid_size())
-            .to_svg(),
-    );
-    svg.push_shape(
-        builder
-            .build_decision(String::from("blah blah blah blah\nblah blah blah blah"))
-            .displace(config.grid_size(), 6 * config.grid_size())
-            .to_svg(),
-    );
-    svg.push_shape(
-        builder
-            .build_process(String::from("i = 0\nj = 0"))
-            .displace(config.grid_size(), 9 * config.grid_size())
-            .to_svg(),
-    );
+    let mut bb = BasicBlock::new(&config, &builder, BlockKind::IO, String::from("input"));
+    bb.push(BlockKind::Process, String::from("01234567890123456789"));
+    bb.push(BlockKind::Process, String::from("ABCDEFGHIJABCDEFGHIJ"));
+    bb.push(BlockKind::Process, String::from("中文中文中文中文中文"));
+    bb.push(BlockKind::Decision, String::from("i < 0"));
+    bb.displace(config.grid_size(), config.grid_size());
+    svg.push_shape(bb.to_svg());
     print!("{}", svg);
 }
